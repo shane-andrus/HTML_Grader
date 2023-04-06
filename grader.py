@@ -27,8 +27,7 @@ while True:
     if tag == 'done':
         break
     else:
-        num_times = int(input('Please enter the number of times this tag should be present: '))
-        tags_to_check[tag] = num_times
+        tags_to_check[tag] = 1
 
 report_file.write('%s,%s\n' % ("Name", ','.join([str(tag) for tag in tags_to_check])))
 
@@ -54,7 +53,12 @@ for file in html_files:
                 aTag = tempSoup.find("a")
                 url = aTag.attrs.get("href")
                 print("Scraping from the website: " + url)
-                page = requests.get(url)
+                page = ""
+                try:
+                    page = requests.get(url)
+                except:
+                    logging.error("There was an error getting html from " + url)
+                    continue
                 soup = BeautifulSoup(page.content, 'html.parser')
                 html = soup.prettify()
                 validator = HTMLValidator(verbose=True)
@@ -73,6 +77,11 @@ for file in html_files:
                     tag_counts = {}
                     # Iterate through tags to check
                     for tag in tags_to_check:
+                        all_tags = soup.find_all(tag)
+                        if tag == "img":
+                            for img_tag in all_tags:
+                                if not "alt" in img_tag.attrs:
+                                    print("An image tag doesn't have an alt attribute")
                         # Count the number of times the tag appears
                         count = len(soup.find_all(tag))
                         # Store the count in the dictionary
@@ -93,6 +102,8 @@ for file in html_files:
             # Write the results to the report file
             report_file.write('%s,%s\n' % (file.split("_")[0], ','.join([str(tag_counts[tag]) for tag in tags_to_check])  + errorStr))
             continue
+        except:
+            logging.error("There was an error reading from %s", file)
     else:  
         # Open HTML file
         try:
